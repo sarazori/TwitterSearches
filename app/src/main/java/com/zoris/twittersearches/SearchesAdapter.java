@@ -10,7 +10,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SearchesAdapter
    extends RecyclerView.Adapter<SearchesAdapter.ViewHolder> {
@@ -21,12 +23,14 @@ public class SearchesAdapter
 
    // List<String> used to obtain RecyclerView items' data
    private final List<String> queries; // search tags
+   private final Map<String, String> map;
 
    // constructor
-   public SearchesAdapter(List<String> queries,
+   public SearchesAdapter(List<String> queries, HashMap<String, String> map,
       View.OnClickListener clickListener,
       View.OnLongClickListener longClickListener) {
       this.queries = queries;
+      this.map = map;
       this.clickListener = clickListener;
       this.longClickListener = longClickListener;
    }
@@ -67,8 +71,9 @@ public class SearchesAdapter
    // sets the text of the list item to display the search tag
    @Override
    public void onBindViewHolder(ViewHolder holder, int position) {
-       holder.textViewTag.setText(queries.get(position));
-       holder.textViewTime.setText(Calendar.getInstance().toString());
+      String tag = queries.get(position);
+       holder.textViewTag.setText(tag);
+       holder.textViewTime.setText(map.get(tag));
    }
 
    // returns the number of items that adapter binds

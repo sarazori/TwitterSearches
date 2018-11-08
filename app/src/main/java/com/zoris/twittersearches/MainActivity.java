@@ -28,9 +28,15 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
    // name of SharedPreferences XML file that stores the saved searches
@@ -41,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
    private FloatingActionButton saveFloatingActionButton; // save search
    private SharedPreferences savedSearches; // user's favorite searches
    private List<String> tags; // list of tags for saved searches
+   private HashMap<String, String> timeMap;
    private SearchesAdapter adapter; // for binding data to RecyclerView
 
    public boolean onCreateOptionsMenu(Menu menu) {
@@ -76,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
       Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
       setSupportActionBar(toolbar);
 
+      timeMap = new HashMap<>();
+
       // get references to the EditTexts and add TextWatchers to them
       queryEditText = ((TextInputLayout) findViewById(
          R.id.queryTextInputLayout)).getEditText();
@@ -91,6 +100,17 @@ public class MainActivity extends AppCompatActivity {
       tags = new ArrayList<>(savedSearches.getAll().keySet());
       Collections.sort(tags, String.CASE_INSENSITIVE_ORDER);
 
+
+      //pulling time out of hashSet
+      for (Map.Entry<String, ?> entry : savedSearches.getAll().entrySet()) {
+          if (entry.getValue() instanceof HashSet) {
+              Set<String> set = (HashSet)entry.getValue();
+              set.get
+              timeMap.put(set)
+          }
+      }
+
+
       // get reference to the RecyclerView to configure it
       RecyclerView recyclerView =
          (RecyclerView) findViewById(R.id.recyclerView);
@@ -100,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
       // create RecyclerView.Adapter to bind tags to the RecyclerView
       adapter = new SearchesAdapter(
-              tags, itemClickListener, itemLongClickListener);
+              tags, timeMap, itemClickListener, itemLongClickListener);
       recyclerView.setAdapter(adapter);
 
       // specify a custom ItemDecorator to draw lines between list items
@@ -166,17 +186,25 @@ public class MainActivity extends AppCompatActivity {
 
    // add new search to file, then refresh all buttons
    private void addTaggedSearch(String tag, String query) {
+      // TODO: Compare to previous timeString, save if new
+      SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+
+
+      String timeString = sdf.format(Calendar.getInstance().getTime());
+
+      HashSet<String> set = new HashSet<String>();
+      set.add(query);
+      set.add(timeString);
 
       // get a SharedPreferences.Editor to store new tag/query pair
       SharedPreferences.Editor preferencesEditor = savedSearches.edit();
-      preferencesEditor.putString(tag, query); // store current search
+      preferencesEditor.putStringSet(tag, set); // store current search
       preferencesEditor.apply(); // store the updated preferences
-
-
 
       // if tag is new, add to and sort tags, then display updated list
       if (!tags.contains(tag)) {
          tags.add(tag); // add new tag
+         timeMap.put(tag, timeString);
          Collections.sort(tags, String.CASE_INSENSITIVE_ORDER);
          adapter.notifyDataSetChanged(); // update tags in RecyclerView
       }
@@ -282,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
          new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
                tags.remove(tag);
+               timeMap.remove(tag);
                // get SharedPreferences.Editor to remove saved search
                SharedPreferences.Editor preferencesEditor =
                   savedSearches.edit();
