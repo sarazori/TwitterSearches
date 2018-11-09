@@ -102,13 +102,13 @@ public class MainActivity extends AppCompatActivity {
 
 
       //pulling time out of hashSet
-      for (Map.Entry<String, ?> entry : savedSearches.getAll().entrySet()) {
-          if (entry.getValue() instanceof HashSet) {
-              Set<String> set = (HashSet)entry.getValue();
-              set.get
-              timeMap.put(set)
-          }
-      }
+     // for (Map.Entry<String, ?> entry : savedSearches.getAll().entrySet()) {
+//           if (entry.getValue() instanceof HashSet) {
+//               Set<String> set = (HashSet)entry.getValue();
+//               set.get
+//               timeMap.put(set)
+//           }
+//       }
 
 
       // get reference to the RecyclerView to configure it
@@ -216,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
          @Override
          public void onClick(View view) {
             // get query string and create a URL representing the search
-            String tag = ((TextView) view).getText().toString();
+            String tag = tagEditText.getText().toString();
             String urlString = getString(R.string.search_URL) +
                Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
 
@@ -235,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
          @Override
          public boolean onLongClick(View view) {
             // get the tag that the user long touched
-            final String tag = ((TextView) view).getText().toString();
+            final String tag = tagEditText.getText().toString();
 
             // create a new AlertDialog
             AlertDialog.Builder builder =
