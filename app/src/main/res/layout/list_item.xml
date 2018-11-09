@@ -6,16 +6,14 @@
 
     <TextView
         android:id="@+id/textViewTag"
-        android:layout_width="wrap_content"
+        android:layout_width="119dp"
         android:layout_height="match_parent"
-        android:text="Test"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
     <TextView
         android:id="@+id/textViewTime"
-        android:layout_width="wrap_content"
+        android:layout_width="182dp"
         android:layout_height="match_parent"
-        android:text="Test"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 </LinearLayout>
 
