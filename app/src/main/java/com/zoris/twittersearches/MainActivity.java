@@ -19,6 +19,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,6 +28,9 @@ import android.view.View.OnLongClickListener;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -49,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
    private List<String> tags; // list of tags for saved searches
    private HashMap<String, String> timeMap;
    private SearchesAdapter adapter; // for binding data to RecyclerView
+
+   private static String QUERY_KEY = "query";
+   private static String TIME_KEY = "time";
 
    public boolean onCreateOptionsMenu(Menu menu) {
       // get the device's current orientation
@@ -100,16 +107,10 @@ public class MainActivity extends AppCompatActivity {
       tags = new ArrayList<>(savedSearches.getAll().keySet());
       Collections.sort(tags, String.CASE_INSENSITIVE_ORDER);
 
-
-      //pulling time out of hashSet
-     // for (Map.Entry<String, ?> entry : savedSearches.getAll().entrySet()) {
-//           if (entry.getValue() instanceof HashSet) {
-//               Set<String> set = (HashSet)entry.getValue();
-//               set.get
-//               timeMap.put(set)
-//           }
-//       }
-
+      //pulling query/times out of prefs
+      for (String tag : tags) {
+         timeMap.put(tag, getTagPref(tag, TIME_KEY));
+      }
 
       // get reference to the RecyclerView to configure it
       RecyclerView recyclerView =
@@ -169,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
             String query = queryEditText.getText().toString();
             String tag = tagEditText.getText().toString();
 
-
             if (!query.isEmpty() && !tag.isEmpty()) {
                // hide the virtual keyboard
                ((InputMethodManager) getSystemService(
@@ -188,20 +188,23 @@ public class MainActivity extends AppCompatActivity {
    private void addTaggedSearch(String tag, String query) {
       // TODO: Compare to previous timeString, save if new
       SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-
-
       String timeString = sdf.format(Calendar.getInstance().getTime());
 
-      HashSet<String> set = new HashSet<String>();
-      set.add(query);
-      set.add(timeString);
+      // store query and time as json string in shared prefs
+      JSONObject taggedPrefJson = new JSONObject();
+      try {
+         taggedPrefJson.put(QUERY_KEY, query);
+         taggedPrefJson.put(TIME_KEY, timeString);
+      } catch (JSONException e) {
+         e.printStackTrace();
+      }
 
       // get a SharedPreferences.Editor to store new tag/query pair
       SharedPreferences.Editor preferencesEditor = savedSearches.edit();
-      preferencesEditor.putStringSet(tag, set); // store current search
+      preferencesEditor.putString(tag, taggedPrefJson.toString()); // store current search
       preferencesEditor.apply(); // store the updated preferences
 
-      // if tag is new, add to and sort tags, then display updated list
+       // if tag is new, add to and sort tags, then display updated list
       if (!tags.contains(tag)) {
          tags.add(tag); // add new tag
          timeMap.put(tag, timeString);
@@ -210,15 +213,39 @@ public class MainActivity extends AppCompatActivity {
       }
    }
 
+   private String getTagPref(String tag, String attribute) {
+      String rawJson = savedSearches.getString(tag, "{}");
+      try {
+         JSONObject json = new JSONObject(rawJson);
+         Log.d("pref", "json: " + json.toString());
+         return json.getString(attribute);
+      } catch (JSONException e) {
+         e.printStackTrace();
+      }
+
+      return ""; //error, or doesnt exist
+   }
+
+
    // itemClickListener launches web browser to display search results
    private final OnClickListener itemClickListener =
       new OnClickListener() {
          @Override
          public void onClick(View view) {
             // get query string and create a URL representing the search
-            String tag = tagEditText.getText().toString();
-            String urlString = getString(R.string.search_URL) +
-               Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
+             final String tag = ((TextView)(view.findViewById(R.id.textViewTag))).getText().toString();
+             Log.d("pref", "tag: " + tag);
+
+
+             String query = getTagPref(tag, QUERY_KEY);
+
+             Log.d("pref", "query: " + query);
+
+
+             String urlString = getString(R.string.search_URL) +
+               Uri.encode(query, "UTF-8");
+
+            Log.d("pref", "url: " + urlString);
 
             // create an Intent to launch a web browser
             Intent webIntent = new Intent(Intent.ACTION_VIEW,
@@ -235,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
          @Override
          public boolean onLongClick(View view) {
             // get the tag that the user long touched
-            final String tag = tagEditText.getText().toString();
+            final String tag = ((TextView)(view.findViewById(R.id.textViewTag))).getText().toString();
 
             // create a new AlertDialog
             AlertDialog.Builder builder =
@@ -257,8 +284,7 @@ public class MainActivity extends AppCompatActivity {
                         case 1: // edit
                            // set EditTexts to match chosen tag and query
                            tagEditText.setText(tag);
-                           queryEditText.setText(
-                              savedSearches.getString(tag, ""));
+                           queryEditText.setText(getTagPref(tag, QUERY_KEY));
                            break;
                         case 2: // delete
                            deleteSearch(tag);
@@ -280,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
    private void shareSearch(String tag) {
       // create the URL representing the search
       String urlString = getString(R.string.search_URL) +
-         Uri.encode(savedSearches.getString(tag, ""), "UTF-8");
+         Uri.encode(getTagPref(tag, QUERY_KEY), "UTF-8");
 
       // create Intent to share urlString
       Intent shareIntent = new Intent();
